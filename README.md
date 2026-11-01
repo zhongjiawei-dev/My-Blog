@@ -1,7 +1,7 @@
 # My-Blog · 钟嘉伟的技术博客
 
 > 软件测试实践记录：接口测试、Web 自动化、数据库验证与缺陷管理。
-> 线上地址：**https://zhongjiawei.github.io/My-Blog/**
+> 线上地址：**https://z1934642491-eng.github.io/My-Blog/**
 
 一个**零构建依赖**的静态博客 —— 没有 npm、没有打包、没有框架，克隆下来双击 `index.html` 就能看。
 用原生 HTML / CSS / JavaScript 手写，为的是把页面结构、样式和交互都掌握在自己手里。
@@ -82,7 +82,7 @@ git init
 git add .
 git commit -m "feat: init personal blog"
 git branch -M main
-git remote add origin https://github.com/zhongjiawei/My-Blog.git
+git remote add origin https://github.com/z1934642491-eng/My-Blog.git
 git push -u origin main
 ```
 
@@ -90,11 +90,11 @@ git push -u origin main
 
 - Source 选择 `Deploy from a branch`
 - Branch 选择 `main`，目录 `/ (root)`
-- 保存后等待 1–2 分钟，访问 `https://zhongjiawei.github.io/My-Blog/`
+- 保存后等待 1–2 分钟，访问 `https://z1934642491-eng.github.io/My-Blog/`
 
 因为仓库名是 `My-Blog`，站点会挂在 `/My-Blog/` 子路径下，所以本项目所有资源引用都用**相对路径**（`assets/...`、`../assets/...`），不需要额外配置 `base`。
 
-> 若想让站点挂在根路径 `https://zhongjiawei.github.io/`，把仓库改名为 `zhongjiawei.github.io` 即可，路径会自动生效。
+> 若想让站点挂在根路径 `https://z1934642491-eng.github.io/`，把仓库改名为 `z1934642491-eng.github.io` 即可，路径会自动生效。
 
 ---
 
