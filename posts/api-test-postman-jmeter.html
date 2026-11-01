@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="dark">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Postman 到 JMeter：一次完整的接口测试链路 | 钟嘉伟</title>
+<meta name="description" content="从单接口断言、参数关联到批量压测，把「点一下看看通不通」变成可复现的接口验收标准。" />
+<link rel="icon" href="../assets/img/favicon.svg" type="image/svg+xml" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&family=Noto+Sans+SC:wght@400;500;700;800&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="../assets/css/style.css" />
+</head>
+<body>
+
+<div class="progress" id="progress"></div>
+
+<header class="nav" id="nav">
+  <div class="nav__inner">
+    <a href="../index.html" class="brand">
+      <span class="brand__mark">Z</span>
+      <span class="brand__text"><b>钟嘉伟</b><small>Test Engineer</small></span>
+    </a>
+    <nav class="nav__links" id="navLinks">
+      <a href="../index.html#about">关于</a>
+      <a href="../index.html#skills">技能</a>
+      <a href="../index.html#projects">项目</a>
+      <a href="../blog.html" class="active">文章</a>
+      <a href="../index.html#contact">联系</a>
+    </nav>
+    <div class="nav__tools">
+      <a class="icon-btn" href="https://github.com/zhongjiawei" target="_blank" rel="noopener" aria-label="GitHub">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 .5C5.73.5.5 5.73.5 12a11.5 11.5 0 0 0 7.86 10.92c.58.1.79-.25.79-.55v-1.94c-3.2.7-3.88-1.54-3.88-1.54-.53-1.34-1.29-1.7-1.29-1.7-1.05-.72.08-.7.08-.7 1.16.08 1.77 1.2 1.77 1.2 1.03 1.76 2.7 1.25 3.36.96.1-.75.4-1.25.73-1.54-2.55-.29-5.24-1.28-5.24-5.7 0-1.26.45-2.29 1.19-3.1-.12-.29-.52-1.46.11-3.04 0 0 .96-.31 3.15 1.18a10.9 10.9 0 0 1 5.74 0c2.18-1.49 3.14-1.18 3.14-1.18.63 1.58.23 2.75.12 3.04.74.81 1.18 1.84 1.18 3.1 0 4.43-2.69 5.4-5.26 5.69.41.36.78 1.06.78 2.14v3.17c0 .3.2.66.8.55A11.5 11.5 0 0 0 23.5 12C23.5 5.73 18.27.5 12 .5Z"/></svg>
+      </a>
+      <button class="icon-btn" id="themeBtn" aria-label="切换主题">
+        <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79Z"/></svg>
+        <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+      </button>
+      <button class="icon-btn nav__toggle" id="navToggle" aria-label="菜单">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+      </button>
+    </div>
+  </div>
+</header>
+
+<main class="article">
+  <div class="wrap">
+    <header class="article__head">
+      <span class="article__cat">接口测试</span>
+      <h1>Postman 到 JMeter：一次完整的接口测试链路</h1>
+      <div class="article__meta">
+        <span>2026-10-18</span>
+        <span>约 8 分钟</span>
+        <span>Postman · JMeter</span>
+      </div>
+    </header>
+
+    <div class="article__layout">
+      <article class="prose">
+        <p>
+          刚开始做接口测试时，我的标准只有一条：<strong>点 Send，看到 200，就认为这个接口没问题</strong>。
+          直到在 P2P 借贷项目里遇到一个「接口返回成功但账户余额没变」的问题，才发现这个标准远远不够。
+          接口测试真正要回答的是三件事：<em>返回码对不对、返回内容对不对、数据落库对不对</em>。
+        </p>
+        <p>下面是我在这条链路上踩出来的四层做法，从最轻的 Postman 单接口，走到 JMeter 压测。</p>
+
+        <h2 id="s1">第一层：先把请求拆开看</h2>
+        <p>
+          拿到一个接口，不要急着填参数。先看四样东西：<strong>请求方法、URL 与路径参数、请求头、请求体</strong>。
+          业务系统里 90% 的「接口不通」都出在请求头：<code>Content-Type</code> 写成 <code>form-data</code> 但后端按 JSON 解析，
+          或者 <code>Authorization</code> 里的 token 少了个 <code>Bearer </code> 前缀。
+        </p>
+        <p>
+          Postman 里我会把环境变量先建好：<code>{{baseUrl}}</code>、<code>{{token}}</code>、<code>{{userId}}</code>。
+          切换测试环境和预发环境时只改变量，不用一条条改 URL，也避免把 dev 的 token 打到预发上。
+        </p>
+
+        <h2 id="s2">第二层：参数关联与断言</h2>
+        <p>
+          单个接口通了，接下来是链路。登录拿 token → 创建借款单拿 <code>loanId</code> → 用 <code>loanId</code> 去投标。
+          这三个请求的参数是串联的，靠手抄 ID 既慢又容易错。
+        </p>
+        <p>Postman 的做法是在 <em>Tests</em> 里写两段脚本，一段提取、一段断言：</p>
+        <pre><code>// 1) 提取 token 存入环境变量，供后续请求引用
+const body = pm.response.json();
+pm.environment.set("token", body.data.token);
+pm.environment.set("loanId", body.data.loanId);
+
+// 2) 断言：状态码 + 业务码 + 关键字段
+pm.test("HTTP 200", () =&gt; pm.response.to.have.status(200));
+pm.test("业务码为 0", () =&gt; pm.expect(body.code).to.eql(0));
+pm.test("借款金额与入参一致", () =&gt; {
+  pm.expect(body.data.amount).to.eql(Number(pm.variables.get("amount")));
+});</code></pre>
+        <div class="callout">
+          <span>💡</span>
+          <div><b>经验：</b>断言不要只断言 <code>code === 0</code>。业务码为 0 只代表「接口没报错」，不代表「业务做对了」。
+          金额、状态、订单号这些关键字段一定要回比，否则会漏掉一类「返回成功但数据错」的缺陷。</div>
+        </div>
+
+        <h2 id="s3">第三层：异常场景比正常场景值钱</h2>
+        <p>
+          正向用例只能证明「能用」，异常用例才能证明「可靠」。我在 P2P 项目里对核心接口固定跑这几类：
+        </p>
+        <table>
+          <thead><tr><th>场景</th><th>构造方式</th><th>期望</th></tr></thead>
+          <tbody>
+            <tr><td>必填为空</td><td>金额传 <code>""</code> 或 <code>null</code></td><td>参数校验拦截，不落库</td></tr>
+            <tr><td>金额越界</td><td><code>0</code>、<code>-1</code>、<code>0.001</code>、超出标的上限</td><td>给出明确提示，不产生脏单</td></tr>
+            <tr><td>越权</td><td>用 A 用户 token 操作 B 用户的 <code>loanId</code></td><td>403，且不泄露他人数据</td></tr>
+            <tr><td>重复提交</td><td>同一请求连发两次</td><td>幂等或友好提示，不重复扣款</td></tr>
+            <tr><td>Token 失效</td><td>手动改一位字符</td><td>401，前端能跳登录</td></tr>
+          </tbody>
+        </table>
+        <p>
+          这张表是我把用例数从 60 条筛到有效用例的依据 —— <strong>按「参数维度 × 权限维度 × 状态维度」做正交</strong>，
+          比无脑铺用例更容易命中真实缺陷。
+        </p>
+
+        <h2 id="s4">第四层：JMeter 看的是趋势，不是单次</h2>
+        <p>
+          功能验完之后，如果这个接口会被高频调用（比如投标、查询标的列表），就该看性能了。
+          JMeter 里最小可用的结构是：<strong>线程组 → HTTP 请求 → 响应断言 → 聚合报告</strong>。
+        </p>
+        <ul>
+          <li><strong>线程组</strong>：线程数 50、Ramp-Up 10s、循环 5 次，模拟 50 个用户 10 秒内逐步进入。</li>
+          <li><strong>HTTP 请求</strong>：填路径，把 token 放进 HTTP 信息头管理器，不要写死在 body 里。</li>
+          <li><strong>响应断言</strong>：断言响应码 200 + 返回体包含关键字段，避免「响应快但全是报错」被误判为通过。</li>
+          <li><strong>聚合报告</strong>：重点看三个数 —— 平均响应时间、90%  Line、错误率。</li>
+        </ul>
+        <p>
+          读报告有个容易踩的坑：<strong>TPS 高不等于性能好</strong>。如果错误率同时很高，说明请求被快速拒绝了，
+          TPS 是被「失败的快」撑起来的。我一般按这个顺序判断：
+        </p>
+        <blockquote>
+          先看错误率是否 &lt; 1% → 再看 90% Line 是否在可接受区间 → 最后才比较 TPS 高低。
+        </blockquote>
+
+        <h2 id="s5">收尾：一份可复现的接口验收清单</h2>
+        <p>现在每测一个接口，我会按这五条过一遍，写进测试报告：</p>
+        <ol>
+          <li>请求结构正确：方法、头、体、编码都能被后端正确识别；</li>
+          <li>正向链路通：参数关联打通，关键字段回比一致；</li>
+          <li>异常有拦截：空值、越界、越权、重复提交都有明确响应；</li>
+          <li>数据落库正确：用 SQL 核对金额与状态（见<a href="mysql-data-verify.html">数据库核对那篇</a>）；</li>
+          <li>性能有基线：并发下的响应时间与错误率在阈值内。</li>
+        </ol>
+        <p>
+          这套流程跑下来，最大的变化不是发现了多少 Bug，而是<strong>提缺陷时能说清「哪一层错了」</strong> ——
+          接口返回错还是数据库写错，定位路径完全不同。这一点在跟开发沟通时省下的时间，比测试本身更多。
+        </p>
+      </article>
+
+      <aside class="toc">
+        <strong>目录</strong>
+        <a href="#s1">第一层：拆开请求</a>
+        <a href="#s2">第二层：关联与断言</a>
+        <a href="#s3">第三层：异常场景</a>
+        <a href="#s4">第四层：JMeter 压测</a>
+        <a href="#s5">接口验收清单</a>
+      </aside>
+    </div>
+
+    <div class="article__foot">
+      <div class="article__nav">
+        <span>上一篇</span>
+        <a href="defect-triage.html">一个合格的缺陷单，应该让开发无法反问</a>
+      </div>
+      <div class="article__nav" style="text-align:right">
+        <span>下一篇</span>
+        <a href="selenium-pom-framework.html">用 POM + 数据驱动重构登录脚本</a>
+      </div>
+    </div>
+  </div>
+</main>
+
+<footer class="footer">
+  <div class="wrap footer__inner">
+    <span>© <span id="year">2026</span> 钟嘉伟 · 用 <code>HTML</code> + <code>CSS</code> + <code>JS</code> 手写</span>
+    <div class="footer__social">
+      <a href="https://github.com/zhongjiawei" target="_blank" rel="noopener">GitHub</a>
+      <a href="../blog.html">全部文章</a>
+      <a href="mailto:15216200398@163.com">Email</a>
+    </div>
+  </div>
+</footer>
+
+<button class="to-top" id="toTop" aria-label="回到顶部">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
+</button>
+
+<script src="../assets/js/main.js"></script>
+</body>
+</html>

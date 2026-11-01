@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="dark">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>界面显示正确，数据库却对不上：SQL 核对的四个切入点 | 钟嘉伟</title>
+<meta name="description" content="金额、状态、流水、时间戳 —— 用多表 JOIN 抓住那些界面看不出来的脏数据。" />
+<link rel="icon" href="../assets/img/favicon.svg" type="image/svg+xml" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&family=Noto+Sans+SC:wght@400;500;700;800&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="../assets/css/style.css" />
+</head>
+<body>
+
+<div class="progress" id="progress"></div>
+
+<header class="nav" id="nav">
+  <div class="nav__inner">
+    <a href="../index.html" class="brand">
+      <span class="brand__mark">Z</span>
+      <span class="brand__text"><b>钟嘉伟</b><small>Test Engineer</small></span>
+    </a>
+    <nav class="nav__links" id="navLinks">
+      <a href="../index.html#about">关于</a>
+      <a href="../index.html#skills">技能</a>
+      <a href="../index.html#projects">项目</a>
+      <a href="../blog.html" class="active">文章</a>
+      <a href="../index.html#contact">联系</a>
+    </nav>
+    <div class="nav__tools">
+      <a class="icon-btn" href="https://github.com/zhongjiawei" target="_blank" rel="noopener" aria-label="GitHub">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 .5C5.73.5.5 5.73.5 12a11.5 11.5 0 0 0 7.86 10.92c.58.1.79-.25.79-.55v-1.94c-3.2.7-3.88-1.54-3.88-1.54-.53-1.34-1.29-1.7-1.29-1.7-1.05-.72.08-.7.08-.7 1.16.08 1.77 1.2 1.77 1.2 1.03 1.76 2.7 1.25 3.36.96.1-.75.4-1.25.73-1.54-2.55-.29-5.24-1.28-5.24-5.7 0-1.26.45-2.29 1.19-3.1-.12-.29-.52-1.46.11-3.04 0 0 .96-.31 3.15 1.18a10.9 10.9 0 0 1 5.74 0c2.18-1.49 3.14-1.18 3.14-1.18.63 1.58.23 2.75.12 3.04.74.81 1.18 1.84 1.18 3.1 0 4.43-2.69 5.4-5.26 5.69.41.36.78 1.06.78 2.14v3.17c0 .3.2.66.8.55A11.5 11.5 0 0 0 23.5 12C23.5 5.73 18.27.5 12 .5Z"/></svg>
+      </a>
+      <button class="icon-btn" id="themeBtn" aria-label="切换主题">
+        <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79Z"/></svg>
+        <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+      </button>
+      <button class="icon-btn nav__toggle" id="navToggle" aria-label="菜单">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+      </button>
+    </div>
+  </div>
+</header>
+
+<main class="article">
+  <div class="wrap">
+    <header class="article__head">
+      <span class="article__cat">数据库</span>
+      <h1>界面显示正确，数据库却对不上：SQL 核对的四个切入点</h1>
+      <div class="article__meta">
+        <span>2026-09-26</span>
+        <span>约 7 分钟</span>
+        <span>MySQL · JOIN</span>
+      </div>
+    </header>
+
+    <div class="article__layout">
+      <article class="prose">
+        <p>
+          在 P2P 借贷项目里，我遇到过一个很典型的问题：用户完成还款后，页面显示的「待还金额」变成了 0，
+          提示「还款成功」，一切看起来都正常。<strong>但账户流水表里只记录了 1 条记录，应该有 2 条</strong>
+          —— 本金和利息被合并成了一笔，导致对账时金额对不上。
+        </p>
+        <p>
+          这类缺陷靠界面永远测不出来。界面校验的是「展示逻辑」，数据库校验的是「业务事实」。
+          这篇整理我做数据库验证时的四个切入点，都基于 MySQL。
+        </p>
+
+        <h2 id="s1">切入点一：金额一致性 —— 主表与流水表要对得上</h2>
+        <p>
+          金融类系统的金额通常存在两处：业务主表（订单、标的）记录「应是多少」，流水表记录「实际动了多少」。
+          两者必须相等，这是最值得写 SQL 去卡的地方。
+        </p>
+        <pre><code>-- 找出「订单金额 ≠ 流水合计」的异常单
+SELECT
+    o.id            AS order_id,
+    o.amount        AS order_amount,
+    IFNULL(SUM(f.amount), 0) AS flow_amount
+FROM t_order o
+LEFT JOIN t_account_flow f
+       ON f.order_id = o.id
+      AND f.flow_type IN ('REPAY_PRINCIPAL', 'REPAY_INTEREST')
+WHERE o.status = 'REPAID'
+GROUP BY o.id, o.amount
+HAVING o.amount &lt;&gt; IFNULL(SUM(f.amount), 0);</code></pre>
+        <div class="callout">
+          <span>💡</span>
+          <div><b>为什么用 <code>LEFT JOIN</code> 而不是 <code>INNER JOIN</code>：</b>如果某笔订单根本没有流水（漏记），
+          <code>INNER JOIN</code> 会把它直接过滤掉，异常就被隐藏了。<code>LEFT JOIN</code> + <code>IFNULL</code>
+          才能把「没有流水」这种更严重的缺陷暴露出来。</div>
+        </div>
+
+        <h2 id="s2">切入点二：状态机 —— 有没有非法流转</h2>
+        <p>
+          借贷业务的状态是有限的：<code>待审核 → 已流标 / 已满标 → 还款中 → 已结清</code>。
+          如果出现「待审核」直接跳到「已结清」，说明某条分支漏了校验。
+        </p>
+        <p>
+          我会把合法流转写成一张对照表，再用 SQL 找出不在表里的记录。简单场景可以直接用 <code>CASE WHEN</code>：
+        </p>
+        <pre><code>-- 找出状态与时间字段矛盾的订单
+SELECT id, status, audit_time, full_time, repay_time
+FROM t_loan
+WHERE
+   (status = 'FULL'      AND full_time  IS NULL)      -- 已满标却没有满标时间
+OR (status = 'REPAYING'  AND full_time  IS NULL)      -- 还款中却没满标
+OR (status = 'FINISHED'  AND repay_time IS NULL)      -- 已结清却没结清时间
+OR (status = 'REJECTED'  AND audit_time IS NULL);     -- 已拒绝却无审核记录</code></pre>
+        <p>
+          这个写法有个好处：<strong>它不依赖业务代码，只依赖「状态和字段在语义上是否自洽」</strong>。
+          写一次，之后每轮回归都能直接跑。
+        </p>
+
+        <h2 id="s3">切入点三：重复与幂等 —— 同一个操作被记了几次</h2>
+        <p>
+          接口超时重试、用户连点两下、消息队列重投，都会造成重复写入。
+          测试时我会在关键动作前后各查一次计数：
+        </p>
+        <pre><code>-- 同一订单、同一类型，是否被重复记账
+SELECT order_id, flow_type, COUNT(*) AS cnt
+FROM t_account_flow
+GROUP BY order_id, flow_type
+HAVING COUNT(*) &gt; 1;
+
+-- 同一用户同一秒内的重复借款申请
+SELECT user_id, DATE_FORMAT(create_time, '%Y-%m-%d %H:%i:%s') AS sec, COUNT(*) AS cnt
+FROM t_loan
+GROUP BY user_id, sec
+HAVING COUNT(*) &gt; 1;</code></pre>
+        <p>
+          第二条 SQL 是我在验证「重复提交」用例时写的。当时接口层面没有拦截，连点两次就生成两笔借款单 ——
+          这个缺陷如果只看页面，两次跳转都正常，根本发现不了。
+        </p>
+
+        <h2 id="s4">切入点四：孤儿数据 —— 关联表里有没有断链</h2>
+        <p>
+          删除、回滚、事务不完整都会留下「父记录没了、子记录还在」的脏数据。用反连接（<code>LEFT JOIN ... IS NULL</code>）
+          一次就能扫出来：
+        </p>
+        <pre><code>-- 流水表里存在、但对应订单已不存在的记录
+SELECT f.*
+FROM t_account_flow f
+LEFT JOIN t_order o ON o.id = f.order_id
+WHERE o.id IS NULL;
+
+-- 标的已存在，但没有任何投资记录（僵尸标的）
+SELECT l.id, l.title
+FROM t_loan l
+LEFT JOIN t_invest i ON i.loan_id = l.id
+WHERE i.id IS NULL AND l.status = 'FULL';</code></pre>
+
+        <h2 id="s5">把 SQL 沉淀成回归脚本</h2>
+        <p>
+          这四个切入点我最后整理成了一份 <code>sql_check.sql</code>，按「金额 / 状态 / 重复 / 孤儿」分四段。
+          每轮回归跑完业务用例后执行一次，<strong>有结果就是异常，不需要人工判断</strong>。
+        </p>
+        <table>
+          <thead><tr><th>检查项</th><th>异常信号</th><th>常见根因</th></tr></thead>
+          <tbody>
+            <tr><td>金额一致性</td><td>主表金额 ≠ 流水合计</td><td>少记一条流水、四舍五入方式不一致</td></tr>
+            <tr><td>状态机</td><td>状态与时间字段矛盾</td><td>分支漏校验、并发下状态覆盖</td></tr>
+            <tr><td>重复记账</td><td>同订单同类流水 &gt; 1 条</td><td>接口未做幂等、重试机制缺陷</td></tr>
+            <tr><td>孤儿数据</td><td>关联表查不到父记录</td><td>删除未级联、事务未回滚</td></tr>
+          </tbody>
+        </table>
+        <p>
+          这样做还有个额外收益：提缺陷时可以直接把 SQL 和结果截图贴进去，开发看一眼就知道去查哪张表。
+          <strong>测试的价值不只是「发现问题」，更是「把问题的范围缩小到一行 SQL」</strong>。
+        </p>
+      </article>
+
+      <aside class="toc">
+        <strong>目录</strong>
+        <a href="#s1">金额一致性</a>
+        <a href="#s2">状态机</a>
+        <a href="#s3">重复与幂等</a>
+        <a href="#s4">孤儿数据</a>
+        <a href="#s5">沉淀成脚本</a>
+      </aside>
+    </div>
+
+    <div class="article__foot">
+      <div class="article__nav">
+        <span>上一篇</span>
+        <a href="selenium-pom-framework.html">用 POM + 数据驱动重构登录脚本</a>
+      </div>
+      <div class="article__nav" style="text-align:right">
+        <span>下一篇</span>
+        <a href="defect-triage.html">一个合格的缺陷单，应该让开发无法反问</a>
+      </div>
+    </div>
+  </div>
+</main>
+
+<footer class="footer">
+  <div class="wrap footer__inner">
+    <span>© <span id="year">2026</span> 钟嘉伟 · 用 <code>HTML</code> + <code>CSS</code> + <code>JS</code> 手写</span>
+    <div class="footer__social">
+      <a href="https://github.com/zhongjiawei" target="_blank" rel="noopener">GitHub</a>
+      <a href="../blog.html">全部文章</a>
+      <a href="mailto:15216200398@163.com">Email</a>
+    </div>
+  </div>
+</footer>
+
+<button class="to-top" id="toTop" aria-label="回到顶部">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
+</button>
+
+<script src="../assets/js/main.js"></script>
+</body>
+</html>

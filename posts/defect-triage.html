@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="dark">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>一个合格的缺陷单，应该让开发无法反问 | 钟嘉伟</title>
+<meta name="description" content="复现步骤、预期实际、环境信息、证据链 —— 缺陷单的四个必填项与三次定界思路。" />
+<link rel="icon" href="../assets/img/favicon.svg" type="image/svg+xml" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&family=Noto+Sans+SC:wght@400;500;700;800&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="../assets/css/style.css" />
+</head>
+<body>
+
+<div class="progress" id="progress"></div>
+
+<header class="nav" id="nav">
+  <div class="nav__inner">
+    <a href="../index.html" class="brand">
+      <span class="brand__mark">Z</span>
+      <span class="brand__text"><b>钟嘉伟</b><small>Test Engineer</small></span>
+    </a>
+    <nav class="nav__links" id="navLinks">
+      <a href="../index.html#about">关于</a>
+      <a href="../index.html#skills">技能</a>
+      <a href="../index.html#projects">项目</a>
+      <a href="../blog.html" class="active">文章</a>
+      <a href="../index.html#contact">联系</a>
+    </nav>
+    <div class="nav__tools">
+      <a class="icon-btn" href="https://github.com/zhongjiawei" target="_blank" rel="noopener" aria-label="GitHub">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 .5C5.73.5.5 5.73.5 12a11.5 11.5 0 0 0 7.86 10.92c.58.1.79-.25.79-.55v-1.94c-3.2.7-3.88-1.54-3.88-1.54-.53-1.34-1.29-1.7-1.29-1.7-1.05-.72.08-.7.08-.7 1.16.08 1.77 1.2 1.77 1.2 1.03 1.76 2.7 1.25 3.36.96.1-.75.4-1.25.73-1.54-2.55-.29-5.24-1.28-5.24-5.7 0-1.26.45-2.29 1.19-3.1-.12-.29-.52-1.46.11-3.04 0 0 .96-.31 3.15 1.18a10.9 10.9 0 0 1 5.74 0c2.18-1.49 3.14-1.18 3.14-1.18.63 1.58.23 2.75.12 3.04.74.81 1.18 1.84 1.18 3.1 0 4.43-2.69 5.4-5.26 5.69.41.36.78 1.06.78 2.14v3.17c0 .3.2.66.8.55A11.5 11.5 0 0 0 23.5 12C23.5 5.73 18.27.5 12 .5Z"/></svg>
+      </a>
+      <button class="icon-btn" id="themeBtn" aria-label="切换主题">
+        <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79Z"/></svg>
+        <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+      </button>
+      <button class="icon-btn nav__toggle" id="navToggle" aria-label="菜单">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+      </button>
+    </div>
+  </div>
+</header>
+
+<main class="article">
+  <div class="wrap">
+    <header class="article__head">
+      <span class="article__cat">缺陷管理</span>
+      <h1>一个合格的缺陷单，应该让开发无法反问</h1>
+      <div class="article__meta">
+        <span>2026-09-12</span>
+        <span>约 6 分钟</span>
+        <span>禅道 · 抓包 · 日志</span>
+      </div>
+    </header>
+
+    <div class="article__layout">
+      <article class="prose">
+        <p>
+          我提的第一个缺陷被开发打回了。理由是：「你描述的现象我复现不出来，请补充环境。」
+          点开一看，我只写了六个字：<strong>「借款金额不对」</strong>。
+        </p>
+        <p>
+          那一刻我明白：缺陷单不是「告诉别人有问题」，而是<strong>让对方按你的步骤，看到同样的错误</strong>。
+          换句话说，合格的缺陷单应该做到 —— 开发看完不需要反问任何一句话。
+        </p>
+
+        <h2 id="s1">四个必填项</h2>
+
+        <h3>1. 环境信息</h3>
+        <p>
+          同一个页面，dev 环境和预发环境可能挂着不同的分支。至少写清：环境地址、账号、浏览器/版本、构建版本或提交号。
+          移动端还要加 App 版本和机型。
+        </p>
+        <pre><code>环境：预发 http://pre.example.com
+账号：test_user_01 / 123456
+浏览器：Chrome 128 / Windows 11
+版本：build-20260912-3</code></pre>
+
+        <h3>2. 可复现的步骤</h3>
+        <p>
+          标准是：<strong>别人照着做，能稳定看到同样的结果</strong>。所以「借款金额不对」要改成编号步骤：
+        </p>
+        <ol>
+          <li>用 test_user_01 登录；</li>
+          <li>进入「我要借款」，填写金额 <code>1000</code>，期限 3 个月，点击提交；</li>
+          <li>审核账号登录后台，审核通过；</li>
+          <li>回到用户端进入「我的借款」，查看列表中的借款金额。</li>
+        </ol>
+        <p>偶现的问题还要补一句出现频率：<em>10 次里出现 3 次，与网络慢时更容易出现</em>。</p>
+
+        <h3>3. 预期 vs 实际</h3>
+        <p>
+          这两行一定要分开写，不要混在一句话里。因为混着写，开发很容易只看懂「实际」，不知道「应该是什么」。
+        </p>
+        <table>
+          <thead><tr><th>项</th><th>内容</th></tr></thead>
+          <tbody>
+            <tr><td>预期结果</td><td>列表显示借款金额 1000.00 元，与提交金额一致</td></tr>
+            <tr><td>实际结果</td><td>列表显示 100.00 元，金额少了两位（疑似单位换算错误）</td></tr>
+          </tbody>
+        </table>
+
+        <h3>4. 证据链</h3>
+        <p>
+          截图是基础，但截图只能证明「看到的」，不能证明「发生的」。我一般附三类证据：
+        </p>
+        <ul>
+          <li><strong>界面截图</strong>：带完整 URL 和时间的全屏图，不要只截元素；</li>
+          <li><strong>接口响应</strong>：Fiddler / Charles 抓包，看 <code>amount</code> 字段实际返回了什么；</li>
+          <li><strong>数据库记录</strong>：一条 SQL 加结果截图，确认到底存错了还是显示错了。</li>
+        </ul>
+
+        <h2 id="s2">三次定界：把问题缩小到一层</h2>
+        <p>
+          缺陷单写完还不算完。真正让开发觉得「这个测试很专业」的，是<strong>你已经帮他排查过一轮</strong>。
+          我的顺序是固定的三步：
+        </p>
+
+        <h3>第一步：抓包看请求</h3>
+        <p>
+          请求里的参数对不对？如果前端传的金额本身就是 <code>100</code>，那是前端传参问题；
+          如果传的是 <code>1000</code> 但返回 <code>100</code>，问题在后端。这一步能砍掉一半的扯皮。
+        </p>
+
+        <h3>第二步：SQL 看数据</h3>
+        <p>
+          请求对、返回错，就去数据库看落库值。落库对但显示错 → 查询或序列化层；
+          落库就错 → 业务逻辑或事务层。具体写法见<a href="mysql-data-verify.html">数据库核对那篇</a>。
+        </p>
+
+        <h3>第三步：日志看堆栈</h3>
+        <p>
+          Linux 上用 <code>grep</code> 按 traceId 捞日志，能看到异常堆栈和耗时：
+        </p>
+        <pre><code># 按时间窗口捞错误日志
+tail -n 2000 app.log | grep -i "ERROR" | grep "2026-09-12 14:2"
+
+# 按 traceId 追踪一次完整请求
+grep "traceId=8f3a91c2" app.log</code></pre>
+        <p>
+          把这三步的结论写成一句话放进缺陷单，比如：
+          <em>「已抓包确认前端传参 1000 正确，数据库 t_loan.amount 落库为 100，疑似后端单位换算（分/元）错误。」</em>
+          —— 这样开发打开单子就能直接定位文件，效率完全不同。
+        </p>
+
+        <h2 id="s3">优先级 ≠ 严重程度</h2>
+        <p>这两个字段经常被填成一样，其实判断维度不同：</p>
+        <table>
+          <thead><tr><th></th><th>看什么</th><th>例子</th></tr></thead>
+          <tbody>
+            <tr><td>严重程度</td><td>问题本身的破坏力</td><td>金额计算错误 → 严重</td></tr>
+            <tr><td>优先级</td><td>多快需要被修</td><td>错别字在首页 Banner → 严重程度低，优先级高</td></tr>
+          </tbody>
+        </table>
+        <p>
+          我的习惯是：涉及资金、权限、数据丢失的一律最高，因为它影响的是「可不可信」；
+          纯展示问题看曝光位置决定优先级。这样排出来的修复顺序，产品也认可。
+        </p>
+
+        <h2 id="s4">最后一步：闭环</h2>
+        <p>
+          缺陷的生命周期不止于「已修复」。我的收尾动作有三个：
+        </p>
+        <ol>
+          <li><strong>回归验证</strong>：按原步骤复现，确认现象消失；</li>
+          <li><strong>关联回归</strong>：同一模块、同一逻辑的相邻功能再跑一遍，防止改 A 坏 B；</li>
+          <li><strong>沉淀用例</strong>：把这个场景补进用例库，下次回归自动覆盖。</li>
+        </ol>
+        <blockquote>
+          一个缺陷真正的价值，是让它不要再出现第二次 —— 而这靠的是用例沉淀，不是关闭按钮。
+        </blockquote>
+        <p>
+          现在回头看那个被打回的缺陷单，我反而挺感谢它。它让我从「报 Bug 的人」变成了
+          「能把问题说清楚的人」—— 后者才是测试工程师的核心能力。
+        </p>
+      </article>
+
+      <aside class="toc">
+        <strong>目录</strong>
+        <a href="#s1">四个必填项</a>
+        <a href="#s2">三次定界</a>
+        <a href="#s3">优先级与严重程度</a>
+        <a href="#s4">闭环</a>
+      </aside>
+    </div>
+
+    <div class="article__foot">
+      <div class="article__nav">
+        <span>上一篇</span>
+        <a href="mysql-data-verify.html">界面显示正确，数据库却对不上</a>
+      </div>
+      <div class="article__nav" style="text-align:right">
+        <span>下一篇</span>
+        <a href="api-test-postman-jmeter.html">Postman 到 JMeter：一次完整的接口测试链路</a>
+      </div>
+    </div>
+  </div>
+</main>
+
+<footer class="footer">
+  <div class="wrap footer__inner">
+    <span>© <span id="year">2026</span> 钟嘉伟 · 用 <code>HTML</code> + <code>CSS</code> + <code>JS</code> 手写</span>
+    <div class="footer__social">
+      <a href="https://github.com/zhongjiawei" target="_blank" rel="noopener">GitHub</a>
+      <a href="../blog.html">全部文章</a>
+      <a href="mailto:15216200398@163.com">Email</a>
+    </div>
+  </div>
+</footer>
+
+<button class="to-top" id="toTop" aria-label="回到顶部">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
+</button>
+
+<script src="../assets/js/main.js"></script>
+</body>
+</html>

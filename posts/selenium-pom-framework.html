@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="dark">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>用 POM + 数据驱动重构登录脚本 | 钟嘉伟</title>
+<meta name="description" content="一个 40 行的登录脚本如何长成能维护的框架：分层、封装、fixture 与失败截图。" />
+<link rel="icon" href="../assets/img/favicon.svg" type="image/svg+xml" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&family=Noto+Sans+SC:wght@400;500;700;800&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="../assets/css/style.css" />
+</head>
+<body>
+
+<div class="progress" id="progress"></div>
+
+<header class="nav" id="nav">
+  <div class="nav__inner">
+    <a href="../index.html" class="brand">
+      <span class="brand__mark">Z</span>
+      <span class="brand__text"><b>钟嘉伟</b><small>Test Engineer</small></span>
+    </a>
+    <nav class="nav__links" id="navLinks">
+      <a href="../index.html#about">关于</a>
+      <a href="../index.html#skills">技能</a>
+      <a href="../index.html#projects">项目</a>
+      <a href="../blog.html" class="active">文章</a>
+      <a href="../index.html#contact">联系</a>
+    </nav>
+    <div class="nav__tools">
+      <a class="icon-btn" href="https://github.com/zhongjiawei" target="_blank" rel="noopener" aria-label="GitHub">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 .5C5.73.5.5 5.73.5 12a11.5 11.5 0 0 0 7.86 10.92c.58.1.79-.25.79-.55v-1.94c-3.2.7-3.88-1.54-3.88-1.54-.53-1.34-1.29-1.7-1.29-1.7-1.05-.72.08-.7.08-.7 1.16.08 1.77 1.2 1.77 1.2 1.03 1.76 2.7 1.25 3.36.96.1-.75.4-1.25.73-1.54-2.55-.29-5.24-1.28-5.24-5.7 0-1.26.45-2.29 1.19-3.1-.12-.29-.52-1.46.11-3.04 0 0 .96-.31 3.15 1.18a10.9 10.9 0 0 1 5.74 0c2.18-1.49 3.14-1.18 3.14-1.18.63 1.58.23 2.75.12 3.04.74.81 1.18 1.84 1.18 3.1 0 4.43-2.69 5.4-5.26 5.69.41.36.78 1.06.78 2.14v3.17c0 .3.2.66.8.55A11.5 11.5 0 0 0 23.5 12C23.5 5.73 18.27.5 12 .5Z"/></svg>
+      </a>
+      <button class="icon-btn" id="themeBtn" aria-label="切换主题">
+        <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79Z"/></svg>
+        <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+      </button>
+      <button class="icon-btn nav__toggle" id="navToggle" aria-label="菜单">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+      </button>
+    </div>
+  </div>
+</header>
+
+<main class="article">
+  <div class="wrap">
+    <header class="article__head">
+      <span class="article__cat">自动化</span>
+      <h1>用 POM + 数据驱动重构登录脚本</h1>
+      <div class="article__meta">
+        <span>2026-10-09</span>
+        <span>约 10 分钟</span>
+        <span>Selenium · pytest · Allure</span>
+      </div>
+    </header>
+
+    <div class="article__layout">
+      <article class="prose">
+        <p>
+          我写的第一版登录自动化脚本长这样：打开浏览器、找元素、输入账号、点登录、断言标题，一共 40 行，
+          全部塞在一个函数里。它能跑通，但只维持了两周 —— 前端把「登录」按钮的 <code>id</code> 从 <code>btnLogin</code>
+          改成了 <code>login-submit</code>，脚本挂了 17 个用例。
+        </p>
+        <p>
+          这次故障让我认真学了 POM（Page Object Model）。这篇记录我从「能跑的脚本」到「能维护的框架」的改造过程，
+          代码基于 ECSHOP 电商后台的登录流程。
+        </p>
+
+        <h2 id="s1">一、问题出在哪</h2>
+        <p>把脚本摊开看，其实混了三件不同的事：</p>
+        <ul>
+          <li><strong>页面定位</strong>：元素怎么找 —— 这部分最容易变，前端一改就崩；</li>
+          <li><strong>业务动作</strong>：输入账号、点登录 —— 相对稳定；</li>
+          <li><strong>测试逻辑</strong>：断言什么、跑哪些数据 —— 最稳定，也最该被复用。</li>
+        </ul>
+        <p>POM 的本质就是<strong>把「易变的部分」关进一个类里</strong>，让测试用例只依赖业务动作，不依赖选择器。</p>
+
+        <h2 id="s2">二、三层结构</h2>
+        <p>改造后的目录是这样，每一层职责单一：</p>
+        <pre><code>ecshop-ui-test/
+├── base/
+│   └── base_page.py        # 公共操作：等待、点击、输入、截图
+├── pages/
+│   └── login_page.py       # 登录页：定位器 + 业务动作
+├── data/
+│   └── login_cases.yaml    # 数据驱动：用例数据
+├── tests/
+│   └── test_login.py       # 用例：只写断言
+├── conftest.py             # fixture：浏览器启停、失败截图
+└── pytest.ini              # 标记、报告参数</code></pre>
+
+        <h3>1. BasePage：把等待和异常收在一处</h3>
+        <p>
+          显式等待是 UI 自动化最容易被忽略的部分。早期的我做的是 <code>time.sleep(2)</code>，
+          网速快时白等、网速慢时还不够。改成统一封装：
+        </p>
+        <pre><code>from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+
+
+class BasePage:
+    def __init__(self, driver, timeout=10):
+        self.driver = driver
+        self.wait = WebDriverWait(driver, timeout)
+
+    def find(self, locator):
+        # 统一走显式等待，元素可见才返回
+        return self.wait.until(EC.visibility_of_element_located(locator))
+
+    def click(self, locator):
+        self.wait.until(EC.element_to_be_clickable(locator)).click()
+
+    def type(self, locator, text):
+        el = self.find(locator)
+        el.clear()
+        el.send_keys(text)
+
+    def text_of(self, locator):
+        return self.find(locator).text</code></pre>
+
+        <h3>2. LoginPage：选择器只出现在这里</h3>
+        <pre><code>from selenium.webdriver.common.by import By
+from base.base_page import BasePage
+
+
+class LoginPage(BasePage):
+    # 定位器集中管理，前端改版只改这一处
+    USERNAME = (By.NAME, "username")
+    PASSWORD = (By.NAME, "password")
+    SUBMIT = (By.CSS_SELECTOR, "input[type='submit']")
+    TIP = (By.CSS_SELECTOR, ".error-tip")
+
+    def open(self, base_url):
+        self.driver.get(f"{base_url}/admin/privilege.php?act=login")
+        return self
+
+    def login(self, username, password):
+        self.type(self.USERNAME, username)
+        self.type(self.PASSWORD, password)
+        self.click(self.SUBMIT)
+        return self
+
+    def error_tip(self):
+        return self.text_of(self.TIP)</code></pre>
+
+        <h2 id="s3">三、数据驱动：用例只写一遍</h2>
+        <p>
+          登录的正向用例只有一条，异常用例却有一堆：密码错、账号为空、账号不存在、验证码错。
+          如果每种情况复制一个 test 函数，后面加一条数据就要加一个函数。用 <code>pytest.mark.parametrize</code> 可以压成一条：
+        </p>
+        <pre><code>import pytest
+import yaml
+from pages.login_page import LoginPage
+
+
+def load_cases():
+    with open("data/login_cases.yaml", encoding="utf-8") as f:
+        return yaml.safe_load(f)["cases"]
+
+
+@pytest.mark.parametrize("case", load_cases(), ids=lambda c: c["name"])
+def test_login(driver, base_url, case):
+    page = LoginPage(driver).open(base_url)
+    page.login(case["username"], case["password"])
+
+    if case["expect"] == "success":
+        assert "管理首页" in driver.title
+    else:
+        assert case["msg"] in page.error_tip()</code></pre>
+        <p>数据文件与代码分离，产品经理改一条文案，我只改 YAML，不碰 Python：</p>
+        <pre><code>cases:
+  - name: 正常登录
+    username: admin
+    password: "123456"
+    expect: success
+  - name: 密码错误
+    username: admin
+    password: "wrong"
+    expect: fail
+    msg: 用户名或密码错误
+  - name: 账号为空
+    username: ""
+    password: "123456"
+    expect: fail
+    msg: 用户名不能为空</code></pre>
+
+        <h2 id="s4">四、fixture：浏览器只开一次，失败自动截图</h2>
+        <p>
+          <code>conftest.py</code> 是 pytest 的共享夹具文件。我把浏览器启停、基础地址、失败截图都放进去，
+          用例里就只剩 <code>driver</code> 这个参数：
+        </p>
+        <pre><code>import pytest
+from selenium import webdriver
+
+
+@pytest.fixture(scope="session")
+def driver():
+    d = webdriver.Chrome()
+    d.implicitly_wait(5)
+    yield d
+    d.quit()
+
+
+@pytest.fixture
+def base_url():
+    return "http://localhost:8080"
+
+
+@pytest.hookimpl(hookwrapper=True)
+def pytest_runtest_makereport(item, call):
+    # 用例失败时自动截图，附到 Allure 报告里
+    outcome = yield
+    report = outcome.get_result()
+    if report.when == "call" and report.failed:
+        driver = item.funcargs.get("driver")
+        if driver:
+            png = driver.get_screenshot_as_png()
+            try:
+                import allure
+                allure.attach(png, name="失败截图",
+                              attachment_type=allure.attachment_type.PNG)
+            except ImportError:
+                pass</code></pre>
+        <div class="callout">
+          <span>⚠️</span>
+          <div><b>踩过的坑：</b><code>scope="session"</code> 的 driver 会被所有用例复用，一旦某条用例把浏览器搞崩，
+          后面全部报错。我的做法是给「需要干净环境」的用例单独加一个 <code>function</code> 级 driver，
+          或者在 <code>pytest.ini</code> 里加 <code>--reruns 1</code> 兜住偶发失败。</div>
+        </div>
+
+        <h2 id="s5">五、报告与执行</h2>
+        <p>
+          最后用 Allure 出报告。执行命令固定成脚本，谁都能一键跑：
+        </p>
+        <pre><code>pytest tests/ -m smoke --alluredir=report/allure
+allure serve report/allure</code></pre>
+        <p>
+          报告里有通过率、失败截图、每步耗时。改造前后最直观的对比是：一次完整登录回归从
+          <strong>人工点击约 20 分钟</strong>，变成<strong>脚本执行 2 分钟出头</strong>，
+          而且失败时不用再猜「刚才点的是哪个按钮」—— 截图直接写明。
+        </p>
+
+        <h2 id="s6">六、这套结构带来的三个改变</h2>
+        <ol>
+          <li><strong>维护成本下降</strong>：选择器只出现在 <code>pages/</code>，前端改版时改动范围可控；</li>
+          <li><strong>用例可读</strong>：测试函数里看不到 <code>By.XPATH</code>，只有 <code>login()</code>、<code>error_tip()</code> 这种业务语言；</li>
+          <li><strong>能分层跑</strong>：用 <code>-m smoke</code> 只跑冒烟，用 <code>-m regression</code> 跑全量，适配不同阶段。</li>
+        </ol>
+        <p>
+          现在回头看，POM 不是为了「显得专业」，而是为了让自动化测试真正能被别人接手 ——
+          一个只有作者看得懂的脚本，价值约等于零。
+        </p>
+      </article>
+
+      <aside class="toc">
+        <strong>目录</strong>
+        <a href="#s1">问题出在哪</a>
+        <a href="#s2">三层结构</a>
+        <a href="#s3">数据驱动</a>
+        <a href="#s4">fixture 与截图</a>
+        <a href="#s5">报告与执行</a>
+        <a href="#s6">三个改变</a>
+      </aside>
+    </div>
+
+    <div class="article__foot">
+      <div class="article__nav">
+        <span>上一篇</span>
+        <a href="api-test-postman-jmeter.html">Postman 到 JMeter：一次完整的接口测试链路</a>
+      </div>
+      <div class="article__nav" style="text-align:right">
+        <span>下一篇</span>
+        <a href="mysql-data-verify.html">界面显示正确，数据库却对不上</a>
+      </div>
+    </div>
+  </div>
+</main>
+
+<footer class="footer">
+  <div class="wrap footer__inner">
+    <span>© <span id="year">2026</span> 钟嘉伟 · 用 <code>HTML</code> + <code>CSS</code> + <code>JS</code> 手写</span>
+    <div class="footer__social">
+      <a href="https://github.com/zhongjiawei" target="_blank" rel="noopener">GitHub</a>
+      <a href="../blog.html">全部文章</a>
+      <a href="mailto:15216200398@163.com">Email</a>
+    </div>
+  </div>
+</footer>
+
+<button class="to-top" id="toTop" aria-label="回到顶部">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
+</button>
+
+<script src="../assets/js/main.js"></script>
+</body>
+</html>
