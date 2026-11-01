@@ -2,16 +2,16 @@
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
     <title>钟嘉伟的测试笔记</title>
-    <link>https://z1934642491-eng.github.io/My-Blog/</link>
+    <link>https://zhongjiawei-dev.github.io/My-Blog/</link>
     <description>软件测试实践记录：接口测试、Web 自动化、数据库验证与缺陷管理。</description>
     <language>zh-CN</language>
     <lastBuildDate>Sun, 18 Oct 2026 10:00:00 +0800</lastBuildDate>
-    <atom:link href="https://z1934642491-eng.github.io/My-Blog/feed.xml" rel="self" type="application/rss+xml" />
+    <atom:link href="https://zhongjiawei-dev.github.io/My-Blog/feed.xml" rel="self" type="application/rss+xml" />
 
     <item>
       <title>Postman 到 JMeter：一次完整的接口测试链路</title>
-      <link>https://z1934642491-eng.github.io/My-Blog/posts/api-test-postman-jmeter.html</link>
-      <guid isPermaLink="true">https://z1934642491-eng.github.io/My-Blog/posts/api-test-postman-jmeter.html</guid>
+      <link>https://zhongjiawei-dev.github.io/My-Blog/posts/api-test-postman-jmeter.html</link>
+      <guid isPermaLink="true">https://zhongjiawei-dev.github.io/My-Blog/posts/api-test-postman-jmeter.html</guid>
       <category>接口测试</category>
       <pubDate>Sun, 18 Oct 2026 10:00:00 +0800</pubDate>
       <description>从单接口断言、参数关联到批量压测，把「点一下看看通不通」变成可复现的接口验收标准。</description>
@@ -19,8 +19,8 @@
 
     <item>
       <title>用 POM + 数据驱动重构登录脚本</title>
-      <link>https://z1934642491-eng.github.io/My-Blog/posts/selenium-pom-framework.html</link>
-      <guid isPermaLink="true">https://z1934642491-eng.github.io/My-Blog/posts/selenium-pom-framework.html</guid>
+      <link>https://zhongjiawei-dev.github.io/My-Blog/posts/selenium-pom-framework.html</link>
+      <guid isPermaLink="true">https://zhongjiawei-dev.github.io/My-Blog/posts/selenium-pom-framework.html</guid>
       <category>自动化</category>
       <pubDate>Fri, 09 Oct 2026 10:00:00 +0800</pubDate>
       <description>一个 40 行的登录脚本如何长成能维护的框架：分层、封装、fixture 与失败截图。</description>
@@ -28,8 +28,8 @@
 
     <item>
       <title>界面显示正确，数据库却对不上：SQL 核对的四个切入点</title>
-      <link>https://z1934642491-eng.github.io/My-Blog/posts/mysql-data-verify.html</link>
-      <guid isPermaLink="true">https://z1934642491-eng.github.io/My-Blog/posts/mysql-data-verify.html</guid>
+      <link>https://zhongjiawei-dev.github.io/My-Blog/posts/mysql-data-verify.html</link>
+      <guid isPermaLink="true">https://zhongjiawei-dev.github.io/My-Blog/posts/mysql-data-verify.html</guid>
       <category>数据库</category>
       <pubDate>Sat, 26 Sep 2026 10:00:00 +0800</pubDate>
       <description>金额、状态、流水、时间戳 —— 用多表 JOIN 抓住那些界面看不出来的脏数据。</description>
@@ -37,8 +37,8 @@
 
     <item>
       <title>一个合格的缺陷单，应该让开发无法反问</title>
-      <link>https://z1934642491-eng.github.io/My-Blog/posts/defect-triage.html</link>
-      <guid isPermaLink="true">https://z1934642491-eng.github.io/My-Blog/posts/defect-triage.html</guid>
+      <link>https://zhongjiawei-dev.github.io/My-Blog/posts/defect-triage.html</link>
+      <guid isPermaLink="true">https://zhongjiawei-dev.github.io/My-Blog/posts/defect-triage.html</guid>
       <category>缺陷管理</category>
       <pubDate>Sat, 12 Sep 2026 10:00:00 +0800</pubDate>
       <description>复现步骤、预期实际、环境信息、证据链 —— 缺陷单的四个必填项与三次定界思路。</description>

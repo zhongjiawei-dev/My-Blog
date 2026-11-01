@@ -38,10 +38,22 @@
     }
   })();
 
+  /* 主题按钮没有可见文字，切换后必须把新状态同步给读屏软件，
+     否则 aria-label 会一直停在「切换主题」，用户无法判断当前是深色还是浅色。 */
   const themeBtn = $("#themeBtn");
   if (themeBtn) {
+    const isDark = () => root.getAttribute("data-theme") === "dark";
+    const syncThemeBtn = () => {
+      const dark = isDark();
+      const label = dark ? "切换到浅色主题" : "切换到深色主题";
+      themeBtn.setAttribute("aria-pressed", String(dark));
+      themeBtn.setAttribute("aria-label", label);
+      themeBtn.setAttribute("title", label);
+    };
+    syncThemeBtn();
     themeBtn.addEventListener("click", () => {
-      setTheme(root.getAttribute("data-theme") === "dark" ? "light" : "dark");
+      setTheme(isDark() ? "light" : "dark");
+      syncThemeBtn();
     });
   }
 

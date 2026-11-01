@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://z1934642491-eng.github.io/My-Blog/sitemap.xml
+Sitemap: https://zhongjiawei-dev.github.io/My-Blog/sitemap.xml
