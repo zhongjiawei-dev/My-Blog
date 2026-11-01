@@ -3,6 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<script>(function(){try{var p=new URLSearchParams(location.search).get("theme"),t=document.documentElement;if(p==="dark"||p==="light"){t.setAttribute("data-theme",p);return}var s=localStorage.getItem("zjw-theme");if(s==="dark"||s==="light"){t.setAttribute("data-theme",s)}else if(window.matchMedia&&window.matchMedia("(prefers-color-scheme: light)").matches){t.setAttribute("data-theme","light")}}catch(e){}})();</script>
 <title>钟嘉伟 | 软件测试工程师 · 个人博客</title>
 <meta name="description" content="钟嘉伟的个人主页与博客 — 软件测试工程师方向，记录功能测试、接口测试、数据库验证与 Web 自动化的实践笔记。" />
 <meta name="author" content="钟嘉伟" />
@@ -12,8 +13,21 @@
 <link rel="icon" href="assets/img/favicon.svg" type="image/svg+xml" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&family=Noto+Sans+SC:wght@400;500;700;800&display=swap" rel="stylesheet" />
+<link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&family=Noto+Sans+SC:wght@400;500;700;800&display=swap" />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&family=Noto+Sans+SC:wght@400;500;700;800&display=swap" media="print" onload="this.media='all'" />
+<noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&family=Noto+Sans+SC:wght@400;500;700;800&display=swap" /></noscript>
 <link rel="stylesheet" href="assets/css/style.css" />
+<link rel="canonical" href="https://z1934642491-eng.github.io/My-Blog/" />
+<meta property="og:site_name" content="钟嘉伟的测试笔记" />
+<meta property="og:url" content="https://z1934642491-eng.github.io/My-Blog/" />
+<meta property="og:image" content="https://z1934642491-eng.github.io/My-Blog/assets/img/og.png" />
+<meta property="og:image:width" content="1200" />
+<meta property="og:image:height" content="630" />
+<meta property="og:locale" content="zh_CN" />
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content="钟嘉伟 | 软件测试工程师 · 个人博客" />
+<meta name="twitter:description" content="钟嘉伟的个人主页与博客 — 软件测试工程师方向，记录功能测试、接口测试、数据库验证与 Web 自动化的实践笔记。" />
+<meta name="twitter:image" content="https://z1934642491-eng.github.io/My-Blog/assets/img/og.png" />
 </head>
 <body>
 
@@ -83,7 +97,7 @@
 
     <div class="hero__portrait">
       <div class="portrait__ring">
-        <img src="assets/img/avatar.png" alt="钟嘉伟的头像" width="264" height="264" />
+        <img src="assets/img/avatar.png" alt="钟嘉伟的头像" width="264" height="264" fetchpriority="high" decoding="async" />
       </div>
       <span class="chip chip--1"><i></i>Selenium + pytest</span>
       <span class="chip chip--2"><i></i>Postman · JMeter</span>

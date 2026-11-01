@@ -7,8 +7,13 @@
 
   const $ = (s, r = document) => r.querySelector(s);
   const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
+  const reduceMotion = window.matchMedia
+    ? window.matchMedia("(prefers-reduced-motion: reduce)")
+    : { matches: false };
 
-  /* ---------- 1. 主题（localStorage 记忆，默认跟随参考站点的深色） ---------- */
+  /* ---------- 1. 主题（localStorage 记忆，默认跟随参考站点的深色） ----------
+     首屏主题已在 <head> 的内联脚本里设好，这里只负责写入和切换，
+     重复检测会推迟到 DOM 解析完，导致浅色用户先看到一帧深色。 */
   const KEY = "zjw-theme";
   const root = document.documentElement;
 
@@ -49,18 +54,23 @@
       "Python + Selenium + pytest",
       "把重复的点击，交给脚本"
     ];
-    let li = 0, ci = 0, deleting = false;
+    if (reduceMotion.matches) {
+      // 尊重系统设置：直接给完整文案，不做逐字动画
+      roleEl.textContent = lines[0];
+    } else {
+      let li = 0, ci = 0, deleting = false;
 
-    (function tick() {
-      const text = lines[li];
-      ci += deleting ? -1 : 1;
-      roleEl.textContent = text.slice(0, ci);
+      (function tick() {
+        const text = lines[li];
+        ci += deleting ? -1 : 1;
+        roleEl.textContent = text.slice(0, ci);
 
-      let delay = deleting ? 40 : 85;
-      if (!deleting && ci === text.length) { delay = 1600; deleting = true; }
-      else if (deleting && ci === 0) { deleting = false; li = (li + 1) % lines.length; delay = 320; }
-      setTimeout(tick, delay);
-    })();
+        let delay = deleting ? 40 : 85;
+        if (!deleting && ci === text.length) { delay = 1600; deleting = true; }
+        else if (deleting && ci === 0) { deleting = false; li = (li + 1) % lines.length; delay = 320; }
+        setTimeout(tick, delay);
+      })();
+    }
   }
 
   /* ---------- 3. 导航：滚动阴影 + 移动端菜单 + 当前区块高亮 ---------- */
@@ -78,12 +88,23 @@
   onScroll();
 
   if (navToggle && navLinks) {
-    navToggle.addEventListener("click", () => navLinks.classList.toggle("open"));
-    $$("a", navLinks).forEach((a) => a.addEventListener("click", () => navLinks.classList.remove("open")));
+    navToggle.setAttribute("aria-expanded", "false");
+    navToggle.addEventListener("click", () => {
+      const open = navLinks.classList.toggle("open");
+      navToggle.setAttribute("aria-expanded", String(open));
+    });
+    $$("a", navLinks).forEach((a) =>
+      a.addEventListener("click", () => {
+        navLinks.classList.remove("open");
+        navToggle.setAttribute("aria-expanded", "false");
+      })
+    );
   }
 
   if (toTop) {
-    toTop.addEventListener("click", () => window.scrollTo({ top: 0, behavior: "smooth" }));
+    toTop.addEventListener("click", () =>
+      window.scrollTo({ top: 0, behavior: reduceMotion.matches ? "auto" : "smooth" })
+    );
   }
 
   // 首页锚点高亮
@@ -113,7 +134,7 @@
   /* ---------- 4. 滚动揭示 ---------- */
   const revealEls = $$(".reveal");
   if (revealEls.length) {
-    if (!("IntersectionObserver" in window) || window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+    if (!("IntersectionObserver" in window) || reduceMotion.matches) {
       revealEls.forEach((el) => el.classList.add("in"));
     } else {
       const io = new IntersectionObserver(
@@ -164,16 +185,21 @@
   const filters = $$(".filter");
   const items = $$("[data-cat]");
   if (filters.length && items.length) {
-    filters.forEach((btn) => {
-      btn.addEventListener("click", () => {
-        filters.forEach((b) => b.classList.remove("is-on"));
-        btn.classList.add("is-on");
-        const cat = btn.dataset.filter;
-        items.forEach((it) => {
-          const show = cat === "all" || it.dataset.cat === cat;
-          it.style.display = show ? "" : "none";
-        });
+    const applyFilter = (btn) => {
+      filters.forEach((b) => {
+        const on = b === btn;
+        b.classList.toggle("is-on", on);
+        b.setAttribute("aria-pressed", String(on));
       });
+      const cat = btn.dataset.filter;
+      items.forEach((it) => {
+        const show = cat === "all" || it.dataset.cat === cat;
+        it.style.display = show ? "" : "none";
+      });
+    };
+    filters.forEach((btn) => {
+      btn.setAttribute("aria-pressed", String(btn.classList.contains("is-on")));
+      btn.addEventListener("click", () => applyFilter(btn));
     });
   }
 
