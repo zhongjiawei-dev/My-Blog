@@ -88,10 +88,10 @@
         </a>
       </div>
       <div class="hero__facts">
-        <div class="fact"><b>60<span style="font-size:.7em">+</span></b><span>测试用例</span></div>
-        <div class="fact"><b>20<span style="font-size:.7em">+</span></b><span>接口校验</span></div>
+        <div class="fact"><b>150<span style="font-size:.7em">+</span></b><span>测试用例</span></div>
+        <div class="fact"><b>22</b><span>接口校验</span></div>
         <div class="fact"><b>4</b><span>技术文章</span></div>
-        <div class="fact"><b>2</b><span>开源项目</span></div>
+        <div class="fact"><b>3</b><span>开源项目</span></div>
       </div>
     </div>
 
@@ -123,13 +123,13 @@
           所以我更愿意先拆需求、画测试点，再动手设计用例。
         </p>
         <p>
-          在 <strong>P2P 借贷系统</strong>的测试实践中，我用等价类、边界值、场景法设计了 60+ 条用例，
-          用 Postman 校验 20+ 个核心接口，再用 MySQL 多表关联核对用户、标的、订单与流水表的金额一致性，
-          定位过「状态流转与流水不匹配」这类靠界面根本看不出来的问题。
+          在 <strong>校园快递代取平台</strong>的测试实践中，我用等价类、边界值、场景法拆开发单、接单、取件、送达、签收五段状态，
+          用 Postman 校验 22 个核心接口，再用 SQL 多表关联核对订单、钱包流水与信用记录，
+          定位过「订单已签收但流水金额对不上」这类靠页面根本看不出来的问题。
         </p>
         <p>
           自动化方面，我用 <strong>Python + Selenium + pytest + Allure</strong> 搭了一套 POM 分层 + 数据驱动的
-          UI 测试框架，把 ECSHOP 电商后台的登录回归从人工点击压缩到分钟级。
+          UI 测试框架，把 <strong>青禾手机商城</strong>的登录、加购、结算和支付回归从人工点击压缩到分钟级。
           日常也习惯用 Fiddler / Charles 抓包、看 Linux 日志、写 SQL，先自己判断问题归属前端还是后端，再提单给开发。
         </p>
         <p>
@@ -226,53 +226,56 @@
     <div class="section__head reveal">
       <span class="section__kicker">Projects</span>
       <h2>项目经历</h2>
-      <p>两个完整的测试实践：一个是手工测试 + 接口 + 数据库的组合拳，一个是把回归交给脚本。</p>
+      <p>两个完整项目，一个从功能、接口和数据库三层做验证，一个把电商主链路交给自动化。</p>
     </div>
 
     <div class="projects__grid">
       <article class="project reveal">
+        <figure class="project__cover"><img src="assets/img/project-campus.png" alt="校园快递代取平台学生工作台" loading="lazy" decoding="async"></figure>
         <div class="project__head">
           <div>
-            <h3>P2P 借贷系统</h3>
-            <p class="project__sub">2025.09 — 2025.12 · 金融 Web 项目 · 功能 + 接口 + 数据库测试</p>
+            <h3>校园快递代取平台</h3>
+            <p class="project__sub">2026.10 — 2026.11 · 校园服务 Web 项目 · 功能 + 接口 + 数据库测试</p>
           </div>
           <span class="project__badge">Full-stack QA</span>
         </div>
-        <p class="desc">覆盖注册登录、借款申请、投标、还款、账户流水五大流程的金融 Web 系统。</p>
+        <p class="desc">学生发布代取需求，骑手接单、取件、送达，学生签收并评价；订单、钱包、信用和操作存证都在同一个系统里闭环。</p>
         <ul class="points">
-          <li>拆解需求梳理测试点，设计用例 <b>60+ 条</b>，覆盖主干流程与异常分支</li>
-          <li>Postman 校验 <b>20+ 个</b>核心接口，覆盖空值、越权、金额边界</li>
-          <li>MySQL 多表关联核对流水，定位<b>金额与状态流转不一致</b>问题</li>
-          <li>禅道记录复现步骤与预期/实际结果，跟进回归形成闭环</li>
+          <li>围绕发单、接单、取件、送达、签收五段状态，覆盖正常、越权与重复操作</li>
+          <li>Postman 校验 <b>22 个接口</b>，核对金额、状态与角色权限边界</li>
+          <li>SQL 关联 <code>orders</code>、<code>flows</code>、<code>credit_logs</code>，定位流水与状态不一致</li>
+          <li>浏览器完整链路跑通，接口回归 <b>111 passed</b>，已知边界单独标记</li>
         </ul>
         <div class="project__foot">
-          <div class="project__stack"><span>Postman</span><span>·</span><span>JMeter</span><span>·</span><span>MySQL</span><span>·</span><span>禅道</span></div>
-          <a class="project__link" href="posts/api-test-postman-jmeter.html">测试笔记 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
+          <div class="project__stack"><span>Python</span><span>·</span><span>MariaDB</span><span>·</span><span>HTML/CSS/JS</span><span>·</span><span>Postman</span></div>
+          <a class="project__link" href="https://github.com/zhongjiawei-dev/campus-express-service" target="_blank" rel="noopener">GitHub 源码 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17 17 7M8 7h9v9"/></svg></a>
         </div>
       </article>
 
       <article class="project reveal">
+        <figure class="project__cover"><img src="assets/img/project-phone.png" alt="青禾手机商城首页" loading="lazy" decoding="async"></figure>
         <div class="project__head">
           <div>
-            <h3>ECSHOP 电商后台</h3>
-            <p class="project__sub">2026.03 — 2026.06 · Web 自动化测试实战 · Python · Selenium · pytest</p>
+            <h3>青禾手机商城</h3>
+            <p class="project__sub">2026.08 — 2026.10 · 电商 Web 项目 · Python · Selenium · pytest · Allure</p>
           </div>
           <span class="project__badge">Automation</span>
         </div>
-        <p class="desc">基于 ECSHOP 电商后台搭建 UI 自动化测试框架，把登录等核心流程由人工回归转为脚本执行。</p>
+        <p class="desc">Flask + Jinja2 的手机商城，覆盖商品浏览、搜索、购物车、结算、订单支付、库存扣减与后台管理。</p>
         <ul class="points">
           <li>Selenium 定位元素并封装公共方法，<b>POM 分层</b>管理页面对象与用例</li>
-          <li>数据驱动批量校验多组账号，覆盖正常 / 账号错误 / 为空场景</li>
-          <li>pytest fixture 管理浏览器启停，标记冒烟与回归用例一键执行</li>
-          <li>Allure / pytest-html 可视化报告，回归耗时降至<b>分钟级</b></li>
+          <li>数据驱动覆盖正常登录、账号错误、空值、库存不足与优惠券边界</li>
+          <li>pytest fixture 管理浏览器启停，失败自动截图，冒烟与回归分组执行</li>
+          <li>页面测试 <b>43 passed</b>，Allure / pytest-html 输出可视化报告</li>
         </ul>
         <div class="project__foot">
-          <div class="project__stack"><span>Python</span><span>·</span><span>Selenium</span><span>·</span><span>pytest</span><span>·</span><span>Allure</span></div>
-          <a class="project__link" href="posts/selenium-pom-framework.html">框架笔记 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
+          <div class="project__stack"><span>Python</span><span>·</span><span>Flask</span><span>·</span><span>Selenium</span><span>·</span><span>pytest</span></div>
+          <a class="project__link" href="https://github.com/zhongjiawei-dev/phone-mall-system" target="_blank" rel="noopener">GitHub 源码 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17 17 7M8 7h9v9"/></svg></a>
         </div>
       </article>
 
       <article class="project reveal">
+        <figure class="project__cover"><img src="assets/img/og.png" alt="个人主页与博客封面" loading="lazy" decoding="async"></figure>
         <div class="project__head">
           <div>
             <h3>个人主页 &amp; 博客</h3>

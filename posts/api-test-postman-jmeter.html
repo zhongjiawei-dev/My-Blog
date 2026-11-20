@@ -77,7 +77,7 @@
       <article class="prose">
         <p>
           刚开始做接口测试时，我的标准只有一条：<strong>点 Send，看到 200，就认为这个接口没问题</strong>。
-          直到在 P2P 借贷项目里遇到一个「接口返回成功但账户余额没变」的问题，才发现这个标准远远不够。
+          直到在校园快递代取平台里遇到一个「接口返回成功但钱包余额没变」的问题，才发现这个标准远远不够。
           接口测试真正要回答的是三件事：<em>返回码对不对、返回内容对不对、数据落库对不对</em>。
         </p>
         <p>下面是我在这条链路上踩出来的四层做法，从最轻的 Postman 单接口，走到 JMeter 压测。</p>
@@ -95,19 +95,19 @@
 
         <h2 id="s2">第二层：参数关联与断言</h2>
         <p>
-          单个接口通了，接下来是链路。登录拿 token → 创建借款单拿 <code>loanId</code> → 用 <code>loanId</code> 去投标。
+          单个接口通了，接下来是链路。登录拿 token → 发布代取订单拿 <code>orderId</code> → 用 <code>orderId</code> 去接单。
           这三个请求的参数是串联的，靠手抄 ID 既慢又容易错。
         </p>
         <p>Postman 的做法是在 <em>Tests</em> 里写两段脚本，一段提取、一段断言：</p>
         <pre><code>// 1) 提取 token 存入环境变量，供后续请求引用
 const body = pm.response.json();
 pm.environment.set("token", body.data.token);
-pm.environment.set("loanId", body.data.loanId);
+pm.environment.set("orderId", body.data.orderId);
 
 // 2) 断言：状态码 + 业务码 + 关键字段
 pm.test("HTTP 200", () =&gt; pm.response.to.have.status(200));
 pm.test("业务码为 0", () =&gt; pm.expect(body.code).to.eql(0));
-pm.test("借款金额与入参一致", () =&gt; {
+pm.test("代取金额与入参一致", () =&gt; {
   pm.expect(body.data.amount).to.eql(Number(pm.variables.get("amount")));
 });</code></pre>
         <div class="callout">
@@ -118,14 +118,14 @@ pm.test("借款金额与入参一致", () =&gt; {
 
         <h2 id="s3">第三层：异常场景比正常场景值钱</h2>
         <p>
-          正向用例只能证明「能用」，异常用例才能证明「可靠」。我在 P2P 项目里对核心接口固定跑这几类：
+          正向用例只能证明「能用」，异常用例才能证明「可靠」。我在校园快递项目里对核心接口固定跑这几类：
         </p>
         <table>
           <thead><tr><th>场景</th><th>构造方式</th><th>期望</th></tr></thead>
           <tbody>
             <tr><td>必填为空</td><td>金额传 <code>""</code> 或 <code>null</code></td><td>参数校验拦截，不落库</td></tr>
-            <tr><td>金额越界</td><td><code>0</code>、<code>-1</code>、<code>0.001</code>、超出标的上限</td><td>给出明确提示，不产生脏单</td></tr>
-            <tr><td>越权</td><td>用 A 用户 token 操作 B 用户的 <code>loanId</code></td><td>403，且不泄露他人数据</td></tr>
+            <tr><td>金额越界</td><td><code>0</code>、<code>-1</code>、<code>0.001</code>、超出订单金额上限</td><td>给出明确提示，不产生脏单</td></tr>
+            <tr><td>越权</td><td>用 A 用户 token 操作 B 用户的 <code>orderId</code></td><td>403，且不泄露他人数据</td></tr>
             <tr><td>重复提交</td><td>同一请求连发两次</td><td>幂等或友好提示，不重复扣款</td></tr>
             <tr><td>Token 失效</td><td>手动改一位字符</td><td>401，前端能跳登录</td></tr>
           </tbody>
@@ -137,7 +137,7 @@ pm.test("借款金额与入参一致", () =&gt; {
 
         <h2 id="s4">第四层：JMeter 看的是趋势，不是单次</h2>
         <p>
-          功能验完之后，如果这个接口会被高频调用（比如投标、查询标的列表），就该看性能了。
+          功能验完之后，如果这个接口会被高频调用（比如接单、查询订单列表），就该看性能了。
           JMeter 里最小可用的结构是：<strong>线程组 → HTTP 请求 → 响应断言 → 聚合报告</strong>。
         </p>
         <ul>

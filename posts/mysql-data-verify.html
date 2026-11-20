@@ -76,9 +76,9 @@
     <div class="article__layout">
       <article class="prose">
         <p>
-          在 P2P 借贷项目里，我遇到过一个很典型的问题：用户完成还款后，页面显示的「待还金额」变成了 0，
-          提示「还款成功」，一切看起来都正常。<strong>但账户流水表里只记录了 1 条记录，应该有 2 条</strong>
-          —— 本金和利息被合并成了一笔，导致对账时金额对不上。
+          在校园快递代取平台里，我遇到过一个很典型的问题：学生完成签收后，页面显示「已签收」，
+          钱包也提示扣款成功，一切看起来都正常。<strong>但钱包流水表里只记录了学生支出，应该有学生支出和骑手收入两条</strong>
+          —— 骑手那一侧没有入账，导致订单金额和流水对不上。
         </p>
         <p>
           这类缺陷靠界面永远测不出来。界面校验的是「展示逻辑」，数据库校验的是「业务事实」。
@@ -87,21 +87,22 @@
 
         <h2 id="s1">切入点一：金额一致性 —— 主表与流水表要对得上</h2>
         <p>
-          金融类系统的金额通常存在两处：业务主表（订单、标的）记录「应是多少」，流水表记录「实际动了多少」。
+          交易类系统的金额通常存在两处：业务主表（订单）记录「应是多少」，流水表记录「实际动了多少」。
           两者必须相等，这是最值得写 SQL 去卡的地方。
         </p>
         <pre><code>-- 找出「订单金额 ≠ 流水合计」的异常单
 SELECT
-    o.id            AS order_id,
-    o.amount        AS order_amount,
-    IFNULL(SUM(f.amount), 0) AS flow_amount
-FROM t_order o
-LEFT JOIN t_account_flow f
-       ON f.order_id = o.id
-      AND f.flow_type IN ('REPAY_PRINCIPAL', 'REPAY_INTEREST')
-WHERE o.status = 'REPAID'
-GROUP BY o.id, o.amount
-HAVING o.amount &lt;&gt; IFNULL(SUM(f.amount), 0);</code></pre>
+    o.id                    AS order_id,
+    o.fee_cents              AS order_fee,
+    SUM(CASE WHEN f.type = 'order_pay' THEN f.amount_cents ELSE 0 END)    AS paid_cents,
+    SUM(CASE WHEN f.type = 'order_income' THEN f.amount_cents ELSE 0 END) AS received_cents
+FROM orders o
+LEFT JOIN flows f
+       ON f.ref = o.order_no
+      AND f.type IN ('order_pay', 'order_income')
+WHERE o.status = 'signed'
+GROUP BY o.id, o.fee_cents
+HAVING paid_cents &lt;&gt; o.fee_cents OR received_cents &lt;&gt; o.fee_cents;</code></pre>
         <div class="callout">
           <span>💡</span>
           <div><b>为什么用 <code>LEFT JOIN</code> 而不是 <code>INNER JOIN</code>：</b>如果某笔订单根本没有流水（漏记），
@@ -111,20 +112,20 @@ HAVING o.amount &lt;&gt; IFNULL(SUM(f.amount), 0);</code></pre>
 
         <h2 id="s2">切入点二：状态机 —— 有没有非法流转</h2>
         <p>
-          借贷业务的状态是有限的：<code>待审核 → 已流标 / 已满标 → 还款中 → 已结清</code>。
-          如果出现「待审核」直接跳到「已结清」，说明某条分支漏了校验。
+          代取订单的状态是有限的：<code>pending → taken → delivering → delivered → signed</code>。
+          如果出现「pending」直接跳到「signed」，说明某条分支漏了校验。
         </p>
         <p>
           我会把合法流转写成一张对照表，再用 SQL 找出不在表里的记录。简单场景可以直接用 <code>CASE WHEN</code>：
         </p>
         <pre><code>-- 找出状态与时间字段矛盾的订单
-SELECT id, status, audit_time, full_time, repay_time
-FROM t_loan
+SELECT id, status, courier_id, picked_at, delivered_at, signed_at
+FROM orders
 WHERE
-   (status = 'FULL'      AND full_time  IS NULL)      -- 已满标却没有满标时间
-OR (status = 'REPAYING'  AND full_time  IS NULL)      -- 还款中却没满标
-OR (status = 'FINISHED'  AND repay_time IS NULL)      -- 已结清却没结清时间
-OR (status = 'REJECTED'  AND audit_time IS NULL);     -- 已拒绝却无审核记录</code></pre>
+   (status = 'taken'      AND courier_id IS NULL)       -- 已接单却没有骑手
+OR (status = 'delivering' AND picked_at   IS NULL)       -- 配送中却没取件时间
+OR (status = 'delivered'  AND delivered_at IS NULL)      -- 已送达却没送达时间
+OR (status = 'signed'     AND signed_at   IS NULL);      -- 已签收却没签收时间</code></pre>
         <p>
           这个写法有个好处：<strong>它不依赖业务代码，只依赖「状态和字段在语义上是否自洽」</strong>。
           写一次，之后每轮回归都能直接跑。
@@ -136,18 +137,18 @@ OR (status = 'REJECTED'  AND audit_time IS NULL);     -- 已拒绝却无审核�
           测试时我会在关键动作前后各查一次计数：
         </p>
         <pre><code>-- 同一订单、同一类型，是否被重复记账
-SELECT order_id, flow_type, COUNT(*) AS cnt
-FROM t_account_flow
-GROUP BY order_id, flow_type
+SELECT ref, type, COUNT(*) AS cnt
+FROM flows
+GROUP BY ref, type
 HAVING COUNT(*) &gt; 1;
 
--- 同一用户同一秒内的重复借款申请
-SELECT user_id, DATE_FORMAT(create_time, '%Y-%m-%d %H:%i:%s') AS sec, COUNT(*) AS cnt
-FROM t_loan
-GROUP BY user_id, sec
+-- 同一用户同一秒内的重复代取订单
+SELECT requester_id, DATE_FORMAT(created_at, '%Y-%m-%d %H:%i:%s') AS sec, COUNT(*) AS cnt
+FROM orders
+GROUP BY requester_id, sec
 HAVING COUNT(*) &gt; 1;</code></pre>
         <p>
-          第二条 SQL 是我在验证「重复提交」用例时写的。当时接口层面没有拦截，连点两次就生成两笔借款单 ——
+          第二条 SQL 是我在验证「重复提交」用例时写的。当时接口层面没有拦截，连点两次就生成两笔代取订单 ——
           这个缺陷如果只看页面，两次跳转都正常，根本发现不了。
         </p>
 
@@ -158,15 +159,15 @@ HAVING COUNT(*) &gt; 1;</code></pre>
         </p>
         <pre><code>-- 流水表里存在、但对应订单已不存在的记录
 SELECT f.*
-FROM t_account_flow f
-LEFT JOIN t_order o ON o.id = f.order_id
+FROM flows f
+LEFT JOIN orders o ON o.order_no = f.ref
 WHERE o.id IS NULL;
 
--- 标的已存在，但没有任何投资记录（僵尸标的）
-SELECT l.id, l.title
-FROM t_loan l
-LEFT JOIN t_invest i ON i.loan_id = l.id
-WHERE i.id IS NULL AND l.status = 'FULL';</code></pre>
+-- 订单已签收，但没有任何存证记录（断链订单）
+SELECT o.id, o.order_no
+FROM orders o
+LEFT JOIN chain_records c ON c.order_id = o.id
+WHERE o.status = 'signed' AND c.id IS NULL;</code></pre>
 
         <h2 id="s5">把 SQL 沉淀成回归脚本</h2>
         <p>
